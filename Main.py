@@ -8,11 +8,11 @@ from CodeWriter import CodeWriter
 
 
 def main():
-    vm_file_path = "../StackArithmetic/SimpleAdd/SimpleAdd.vm"
-    asm_file_path = "../StackArithmetic/SimpleAdd/SimpleAdd.asm"
+    vm_file_path = "Input/StackArithmetic/SimpleAdd/SimpleAdd.vm"
     
     p = Parser(vm_file_path)
-    cw = CodeWriter(asm_file_path)
+
+    cw = CodeWriter(vm_file_path.replace(".vm", ".asm"))
 
     while(p.hasMoreCommands()):
         cmdType = p.commandType()
