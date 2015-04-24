@@ -24,20 +24,22 @@ class CodeWriter:
         self.infile = open(filename, 'r')
 
     def writeAdd(self):
-        self.writeComment("add")
-        self.point(segmentBases["temp"])
-        self.writeline("D=M")
-        self.point(segmentBases["temp"] + 1)
-        self.writeline("D=D+M")
-        self.point(segmentBases["temp"])
-        self.writeline("M=D")
-        self.writePushPop(CommandType.C_PUSH, "temp", 0)
+        self.writeBinOpOnT0AndT1("+", "add")
 
     def writeSub(self):
         self.writeBinOpOnT0AndT1("-", "sub")
 
     def writeNeg(self):
         self.writeUnaryOpOnT0("-", "neg")
+
+    def eq(self):
+        self.writeConditionalJump("JEQ", "eq")
+
+    def gt(self):
+        self.writeConditionalJump("JGT", "gt")
+
+    def lt(self):
+        self.writeConditionalJump("JLT", "lt")
 
     def writeAnd(self):
         self.writeBinOpOnT0AndT1("&", "and")
@@ -51,7 +53,7 @@ class CodeWriter:
     def writeUnaryOpOnT0(self, operator, comment):
         self.writeComment(comment)
 
-        temp = int(segmentBases["temp"])
+        temp = segmentBases["temp"]
         temp_0 = str(temp + 0)
 
         self.point(temp_0)
@@ -62,9 +64,9 @@ class CodeWriter:
     def writeBinOpOnT0AndT1(self, operator, comment):
         self.writeComment(comment)
 
-        temp = int(segmentBases["temp"])
-        temp_0 = str(temp + 0)
-        temp_1 = str(temp + 1)
+        tempSegmentBase = segmentBases["temp"]
+        temp_0 = str(tempSegmentBase + 0)
+        temp_1 = str(tempSegmentBase + 1)
 
         self.point(temp_0)
         self.writeline("D=M")
@@ -73,18 +75,39 @@ class CodeWriter:
         self.point(temp_0)
         self.writeline("M=D")
 
-        self.writePush("temp", 0)
+        self.writePush("tempSegmentBase", 0)
 
     def writeConditionalJump(self, operator, comment):
         self.writeComment(comment)
 
-        temp = int(segmentBases["temp"])
-        temp_0 = str(temp + 0)
-        temp_1 = str(temp + 1)
+        tempSegmentBase = int(segmentBases["temp"])
+        temp_0 = str(tempSegmentBase + 0)
+        temp_1 = str(tempSegmentBase + 1)
 
         self.point(temp_0)
         self.writeline("D=M")
         self.point(temp_1)
+        self.writeline("D=D-M")
+
+        current_line_counter = self.line_counter
+        true_case_address = current_line_counter + 5
+        finish_address = current_line_counter + 6
+
+        self.point(true_case_address)               # 0
+        self.writeline("D;{0}".format(operator))    # 1
+
+        self.writeline("D=0")                       # 2
+
+        self.point(finish_address)                  # 3
+        self.writeline("0;JMP")                     # 4
+
+        # true case
+        self.writeline("D=-1")                      # 5
+
+        # finish
+        self.point(temp_0)                          # 6
+        self.writeline("M=D")
+        self.writePush("tempSegmentBase", 0)
 
     def writeArithmetic(self, command):
         '''
@@ -94,8 +117,8 @@ class CodeWriter:
         if command in unaryOperators:
             self.writePushPop(CommandType.C_POP, "temp", 0)
         elif command in binaryOperators:
-            self.writePushPop(CommandType.C_POP, "temp", 0)
             self.writePushPop(CommandType.C_POP, "temp", 1)
+            self.writePushPop(CommandType.C_POP, "temp", 0)
 
         if command == "add":
             self.writeAdd()
@@ -124,15 +147,15 @@ class CodeWriter:
         self.line_counter += 1
 
     def point(self, base):
-        self.writeline("@{0}".format(base))          #Set A to base
-        if not str(base).isdigit():              #For numerical bases, we just want the number
-            self.writeline("A=M")           #Set A to the value pointed by base
-    
+        self.writeline("@{0}".format(base))     # Set A to base
+        if not str(base).isdigit():             # For numerical bases, we just want the number
+            self.writeline("A=M")               # Set A to the value pointed by base
+
     def pointOffset(self, base, offset):
-        self.writeline("@{0}".format(offset))    # Put the offset value in A
-        self.writeline("D=A")                    # Save that offset
-        self.writeline("@{0}".format(base))      # Set A to base
-        self.writeline("A=A+D")            # Set A to the value pointed by base
+        self.writeline("@{0}".format(offset))   # Put the offset value in A
+        self.writeline("D=A")                   # Save that offset
+        self.writeline("@{0}".format(base))     # Set A to base
+        self.writeline("A=A+D")                 # Set A to the value pointed by base
 
     def incrementSP(self):
         self.writeline("@SP")
@@ -146,48 +169,48 @@ class CodeWriter:
         self.writeComment('push {0} {1}'.format(segment, index))
 
         if segment == "constant":
-            self.writeline("@" + index)                     # Put the constant in A
-            self.writeline("D=A")                           # Save A in D
+            self.writeline("@" + index)                         # Put the constant in A
+            self.writeline("D=A")                               # Save A in D
         elif segment in segmentBases:
             if segment != "temp":
-                self.pointOffset(segmentBases[segment], index)    #Point to the segement offset
+                self.pointOffset(segmentBases[segment], index)  # Point to the segement offset
             else:
-                self.point(segmentBases["temp"] + index)          #Point directly to the temp offset      
-            
-            self.writeline("D=M")                                 #Save the value in that position
+                self.point(segmentBases["temp"] + index)        # Point directly to the temp offset
+
+            self.writeline("D=M")                               # Save the value in that position
         else:
             return
 
-        # At this stae the value to be pushed is in D
+        # At this stage the value to be pushed is in D
 
-        self.point("SP")                                          # Point to the stack top
-        self.writeline("M=D")                                     # Set top value to D
-        self.incrementSP()                                        # Point to the next open position
+        self.point("SP")                                        # Point to the stack top
+        self.writeline("M=D")                                   # Set top value to D
+        self.incrementSP()                                      # Point to the next open position
 
     def writePop(self, segment, index):
         self.writeComment('pop {0} {1}'.format(segment, index))
-        
+
         if segment in segmentBases.keys():
-            self.decrementSP()                                    #Make the top the last value inserted
+            self.decrementSP()                                  # Make the top the last value inserted
 
             if segment != "temp":
-                self.pointOffset(segmentBases[segment], index)        #Point to the target                
-                self.writeline("D=A")                                 #Store the target address
-                self.point(str(int(segmentBases["general"])))         #Point to the first GP reg
-                self.writeline("M=D")                                 #Assign it with the address
+                self.pointOffset(segmentBases[segment], index)  # Point to the target
+                self.writeline("D=A")                           # Store the target address
+                self.point(str(int(segmentBases["general"])))   # Point to the first GP reg
+                self.writeline("M=D")                           # Assign it with the address
 
-                self.point("SP")                                      #Point to the stack top
-                self.writeline("D=M")                                 #Store its value
+                self.point("SP")                                # Point to the stack top
+                self.writeline("D=M")                           # Store its value
 
-                self.point(segmentBases["general"])         #Point to the reg with the address
-                self.writeline("A=M")                                 #Point to the address
-                self.writeline("M=D")                                 #Set the value of the stack top
+                self.point(segmentBases["general"])         # Point to the reg with the address
+                self.writeline("A=M")                       # Point to the address
+                self.writeline("M=D")                       # Set the value of the stack top
             else:
-                self.point("SP")                                      #Point to the stack top
-                self.writeline("D=M")                                 #Store its value
+                self.point("SP")                            # Point to the stack top
+                self.writeline("D=M")                       # Store its value
                 self.point(segmentBases["temp"] + index)
-                self.writeline("M=D")                                 #Set the value of the stack top
-                                
+                self.writeline("M=D")                       # Set the value of the stack top
+
     def writePushPop(self, commandType, segment, index):
         '''
         Writes the assembly code that is the translation
@@ -206,9 +229,11 @@ class CodeWriter:
         '''
         self.outfile.close()
 
-segmentBases = {"local":"LCL","argument":"ARG","this":"THIS","that":"THAT","static":16, "temp":5, "general":13}
+segmentBases = {"local": "LCL", "argument": "ARG", "this": "THIS",
+                "that": "THAT", "static": 16, "temp": 5, "general": 13}
 binaryOperators = {"add", "sub", "eq", "gt", "lt", "and", "or"}
 unaryOperators = {"not", "neg"}
+
 
 def Test():
     cw = CodeWriter("Input/StackArithmetic/SimpleAdd/SimpleAdd.asm")
