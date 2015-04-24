@@ -9,4 +9,3 @@ class CommandType:
     C_FUNCTION = 7
     C_RETURN = 8
     C_CALL = 10
-
