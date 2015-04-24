@@ -1,7 +1,10 @@
 from Common import CommandType
 '''
-Handles the parsing of a single .vm file, and encapsulates access to the input code. It reads VM commands, parses them, and provides convenient access to their components. In addition, it removes all white space and comments.
+Handles the parsing of a single .vm file, and encapsulates access to the input
+code. It reads VM commands, parses them, and provides convenient access to
+their components. In addition, it removes all white space and comments.
 '''
+
 
 class Parser:
     def __init__(self, filename):
@@ -43,50 +46,55 @@ class Parser:
     def ParseCommandType(self, command):
         if command in ArithmeticAndBooleanCommands:
             return CommandType.C_ARITHMETIC
-        
+
         if command.startswith("push "):
             return CommandType.C_PUSH
-    
+
         if command.startswith("pop "):
             return CommandType.C_POP
 
         return CommandType.C_EMPTY
-    
+
     def arg1(self):
-        if(self.current_type == CommandType.C_RETURN or self.current_type == CommandType.C_EMPTY):
+        if(self.current_type == CommandType.C_RETURN or
+           self.current_type == CommandType.C_EMPTY):
             return None
 
         if (self.current_type == CommandType.C_ARITHMETIC):
             return self.currentCommand
-                
+
         return self.currentCommand.split(' ')[1]
 
     def arg2(self):
-        if not self.current_type in CommandsWithArg2:            
+        if self.current_type not in CommandsWithArg2:
             return None
 
         return self.currentCommand.split(' ')[2]
 
-ArithmeticAndBooleanCommands = ['add','sub','neg','eq','gt','lt','and','or','not']
-CommandsWithArg2 = [CommandType.C_PUSH, CommandType.C_POP, CommandType.C_FUNCTION, CommandType.C_CALL]
+ArithmeticAndBooleanCommands = ['add', 'sub', 'neg',
+                                'eq', 'gt', 'lt',
+                                'and', 'or', 'not']
+CommandsWithArg2 = [CommandType.C_PUSH, CommandType.C_POP,
+                    CommandType.C_FUNCTION, CommandType.C_CALL]
+
 
 def Test():
-    p = Parser("/home/ben/CS/Master/Nand2Tetris/projects/07/StackArithmetic/SimpleAdd/SimpleAdd.vm")
-    while(p.hasMoreCommands()):        
+    p = Parser("/home/ben/CS/Master/Nand2Tetris/projects/07/StackArithmetic/" +
+               "SimpleAdd/SimpleAdd.vm")
+    while(p.hasMoreCommands()):
         print p.commandType()
-        
+
         if(p.commandType() == CommandType.C_ARITHMETIC):
             print "C_ARITHMETIC: " + str(p.currentCommand)
-        
+
         if(p.commandType() == CommandType.C_POP):
             print "C_POP: " + str(p.currentCommand)
-        
+
         if(p.commandType() == CommandType.C_POP):
             print "C_PUSH: " + str(p.currenCommand)
-        
+
         print "ARG1: " + str(p.arg1())
         print "ARG2: " + str(p.arg2())
         p.advance()
 
 Test()
-            
