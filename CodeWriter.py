@@ -14,6 +14,8 @@ class CodeWriter:
         self.outfile = open(outfile, 'w')
         self.infile = None
 
+        self.line_counter = 0
+
     def setFileName(self, filename):
         '''
         Informs the code writer that the translation of a
@@ -30,6 +32,59 @@ class CodeWriter:
         self.point(str(int(segmentBases["temp"]) + 1))
         self.writeline("M=D")
         self.writePushPop(CommandType.C_PUSH, "temp", 1)
+
+    def writeSub(self):
+        self.writeBinOpOnT0AndT1("-", "sub")
+
+    def writeNeg(self):
+        self.writeUnaryOpOnT0("-", "neg")
+
+    def writeAnd(self):
+        self.writeBinOpOnT0AndT1("&", "and")
+
+    def writeOr(self):
+        self.writeBinOpOnT0AndT1("|", "or")
+
+    def writeNot(self):
+        self.writeUnaryOpOnT0("!", "not")
+
+    def writeUnaryOpOnT0(self, operator, comment):
+        self.writeComment(comment)
+
+        temp = int(segmentBases["temp"])
+        temp_0 = str(temp + 0)
+
+        self.point(temp_0)
+        self.writeline("M={0}M")
+
+        self.writePush("temp", 0)
+
+    def writeBinOpOnT0AndT1(self, operator, comment):
+        self.writeComment(comment)
+
+        temp = int(segmentBases["temp"])
+        temp_0 = str(temp + 0)
+        temp_1 = str(temp + 1)
+
+        self.point(temp_0)
+        self.writeline("D=M")
+        self.point(temp_1)
+        self.writeline("D=D{0}M".format(operator))
+        self.point(temp_0)
+        self.writeline("M=D")
+
+        self.writePush("temp", 0)
+
+    def writeConditionalJump(self, operator, comment):
+        self.writeComment(comment)
+
+        temp = int(segmentBases["temp"])
+        temp_0 = str(temp + 0)
+        temp_1 = str(temp + 1)
+
+        self.point(temp_0)
+        self.writeline("D=M")
+        self.point(temp_1)
 
     def writeArithmetic(self, command):
         '''
@@ -66,6 +121,7 @@ class CodeWriter:
 
     def writeline(self, line):
         self.outfile.write(str(line) + "\n")
+        self.line_counter += 1
 
     def point(self, base):
         self.writeline("@{0}".format(base))  # Set A to base
@@ -102,7 +158,7 @@ class CodeWriter:
 
         self.point("SP")                                          # Point to the stack top
         self.writeline("M=D")                                     # Set top value to D
-        self.incrementSP()                                        # Point to the next open posisiton
+        self.incrementSP()                                        # Point to the next open position
 
     def writePop(self, segment, index):
         self.writeComment('pop {0} {1}'.format(segment, index))
@@ -145,8 +201,7 @@ unaryOperators = {"not", "neg"}
 
 
 def Test():
-    cw = CodeWriter("/home/ben/CS/Master/Nand2Tetris/projects/07/" +
-                    "StackArithmetic/SimpleAdd/SimpleAdd.asm")
+    cw = CodeWriter("Input/StackArithmetic/SimpleAdd/SimpleAdd.asm")
     cw.writePushPop(CommandType.C_PUSH, "constant", "8")
     cw.writePushPop(CommandType.C_PUSH, "constant", "-7")
     cw.writeArithmetic("add")
