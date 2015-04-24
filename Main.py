@@ -6,10 +6,9 @@ from Common import CommandType
 from CodeWriter import CodeWriter
 
 
-
 def main():
     vm_file_path = "Input/StackArithmetic/SimpleAdd/SimpleAdd.vm"
-    
+
     p = Parser(vm_file_path)
 
     cw = CodeWriter(vm_file_path.replace(".vm", ".asm"))

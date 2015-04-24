@@ -75,12 +75,12 @@ class CodeWriter:
         self.point(temp_0)
         self.writeline("M=D")
 
-        self.writePush("tempSegmentBase", 0)
+        self.writePush("temp", 0)
 
     def writeConditionalJump(self, operator, comment):
         self.writeComment(comment)
 
-        tempSegmentBase = int(segmentBases["temp"])
+        tempSegmentBase = segmentBases["temp"]
         temp_0 = str(tempSegmentBase + 0)
         temp_1 = str(tempSegmentBase + 1)
 
@@ -96,6 +96,7 @@ class CodeWriter:
         self.point(true_case_address)               # 0
         self.writeline("D;{0}".format(operator))    # 1
 
+        # false case
         self.writeline("D=0")                       # 2
 
         self.point(finish_address)                  # 3
@@ -107,7 +108,7 @@ class CodeWriter:
         # finish
         self.point(temp_0)                          # 6
         self.writeline("M=D")
-        self.writePush("tempSegmentBase", 0)
+        self.writePush("temp", 0)
 
     def writeArithmetic(self, command):
         '''
