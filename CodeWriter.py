@@ -94,7 +94,11 @@ class CodeWriter:
             self.writeline("@" + index)                           #Put the constant in A
             self.writeline("D=A")                                 #Save A in D
         elif segment in segmentBases:
-            self.pointOffset(segmentBases[segment], index)        #Point to the segement offset
+            if segment != "temp":
+                self.pointOffset(segmentBases[segment], index)    #Point to the segement offset
+            else:
+                self.point(segmentBases["temp"] + index)          #Point directly to the temp offset      
+            
             self.writeline("D=M")                                 #Save the value in that position
         else:
             return
