@@ -32,13 +32,13 @@ class CodeWriter:
     def writeNeg(self):
         self.writeUnaryOpOnT0("-", "neg")
 
-    def eq(self):
+    def writeEq(self):
         self.writeConditionalJump("JEQ", "eq")
 
-    def gt(self):
+    def writeGt(self):
         self.writeConditionalJump("JGT", "gt")
 
-    def lt(self):
+    def writeLt(self):
         self.writeConditionalJump("JLT", "lt")
 
     def writeAnd(self):
@@ -115,10 +115,10 @@ class CodeWriter:
         of the given arithmetic command.
         '''
         if command in unaryOperators:
-            self.writePushPop(CommandType.C_POP, "temp", 0)
+            self.writePop("temp", 0)
         elif command in binaryOperators:
-            self.writePushPop(CommandType.C_POP, "temp", 1)
-            self.writePushPop(CommandType.C_POP, "temp", 0)
+            self.writePop("temp", 1)
+            self.writePop("temp", 0)
 
         if command == "add":
             self.writeAdd()
@@ -241,5 +241,3 @@ def Test():
     cw.writePushPop(CommandType.C_PUSH, "constant", "7")
     cw.writeArithmetic("add")
     cw.Close()
-
-Test()
