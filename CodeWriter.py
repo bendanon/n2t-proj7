@@ -142,6 +142,7 @@ class CodeWriter:
 
     def writeComment(self, comment):
         self.writeline("//      " + comment)
+        self.line_counter -= 1
 
     def writeline(self, line):
         self.outfile.write(str(line) + "\n")
