@@ -96,5 +96,3 @@ def Test():
         print "ARG1: " + str(p.arg1())
         print "ARG2: " + str(p.arg2())
         p.advance()
-
-Test()
