@@ -90,7 +90,7 @@ class CodeWriter:
     def writePush(self, segment, index):
         self.writeComment('push {0} {1}'.format(segment, index))
 
-        if segment == "constant" and index.isdigit():
+        if segment == "constant":
             self.writeline("@" + index)                           #Put the constant in A
             self.writeline("D=A")                                 #Save A in D
         elif segment in segmentBases:
@@ -146,7 +146,7 @@ unaryOperators = {"not", "neg"}
 def Test():
     cw = CodeWriter("/home/ben/CS/Master/Nand2Tetris/projects/07/StackArithmetic/SimpleAdd/SimpleAdd.asm")
     cw.writePushPop(CommandType.C_PUSH, "constant", "8")
-    cw.writePushPop(CommandType.C_PUSH, "constant", "7")
+    cw.writePushPop(CommandType.C_PUSH, "constant", "-7")
     cw.writeArithmetic("add")
     cw.Close()
 
