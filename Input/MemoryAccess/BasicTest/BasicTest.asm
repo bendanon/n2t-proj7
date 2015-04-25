@@ -9,10 +9,8 @@ M=M+1
 //      pop local 0
 @SP
 M=M-1
-@0
-D=A
 @LCL
-A=M+D
+A=M
 D=A
 @15
 M=D
@@ -153,24 +151,14 @@ M=M+1
 //      pop temp 6
 @SP
 M=M-1
-@6
-D=A
-@5
-A=M+D
-D=A
-@15
-M=D
 @SP
 A=M
 D=M
-@15
-A=M
+@11
 M=D
 //      push local 0
-@0
-D=A
 @LCL
-A=M+D
+A=M
 D=M
 @SP
 A=M
@@ -346,10 +334,7 @@ M=D
 @SP
 M=M+1
 //      push temp 6
-@6
-D=A
-@5
-A=M+D
+@11
 D=M
 @SP
 A=M

@@ -53,26 +53,19 @@ class CodeWriter:
     def writeUnaryOpOnT0(self, operator, comment):
         self.writeComment(comment)
 
-        GP = segmentBases["general"]
-        GP_0 = str(GP + 0)
-
-        self.point(GP_0)
+        self.point("general", 0)
         self.writeline("M={0}M".format(operator))
 
         self.writePush("general", 0)
 
     def writeBinOpOnT0AndT1(self, operator, comment):
         self.writeComment(comment)
-
-        GPSegmentBase = segmentBases["general"]
-        GP_0 = str(GPSegmentBase + 0)
-        GP_1 = str(GPSegmentBase + 1)
-
-        self.point(GP_0)
+        
+        self.point("general", 0)
         self.writeline("D=M")
-        self.point(GP_1)
+        self.point("general", 1)
         self.writeline("D=D{0}M".format(operator))
-        self.point(GP_0)
+        self.point("general", 0)
         self.writeline("M=D")
 
         self.writePush("general", 0)
@@ -80,33 +73,29 @@ class CodeWriter:
     def writeConditionalJump(self, operator, comment):
         self.writeComment(comment)
 
-        GPSegmentBase = segmentBases["general"]
-        GP_0 = str(GPSegmentBase + 0)
-        GP_1 = str(GPSegmentBase + 1)
-
-        self.point(GP_0)
+        self.point("general", 0)
         self.writeline("D=M")
-        self.point(GP_1)
+        self.point("general", 1)
         self.writeline("D=D-M")
 
         current_line_counter = self.line_counter
         true_case_address = current_line_counter + 5
         finish_address = current_line_counter + 6
 
-        self.point(true_case_address)               # 0
+        self.point(true_case_address, 0)            # 0
         self.writeline("D;{0}".format(operator))    # 1
 
         # false case
         self.writeline("D=0")                       # 2
 
-        self.point(finish_address)                  # 3
+        self.point(finish_address, 0)               # 3
         self.writeline("0;JMP")                     # 4
 
         # true case
         self.writeline("D=-1")                      # 5
 
         # finish
-        self.point(GP_0)                          # 6
+        self.point("general", 0)                    # 6
         self.writeline("M=D")
         self.writePush("general", 0)
 
@@ -148,16 +137,20 @@ class CodeWriter:
         self.outfile.write(str(line) + "\n")
         self.line_counter += 1
 
-    def point(self, base):
-        self.writeline("@{0}".format(base))     # Set A to base
-        if not str(base).isdigit():             # For numerical bases, we just want the number
-            self.writeline("A=M")               # Set A to the value pointed by base
-
-    def pointOffset(self, base, offset):
-        self.writeline("@{0}".format(offset))   # Put the offset value in A
-        self.writeline("D=A")                   # Save that offset
-        self.writeline("@{0}".format(base))     # Set A to base
-        self.writeline("A=M+D")                 # Set A to the value pointed by base
+    def point(self, base, offset):
+        if base in runtimeProvidedBases:
+            if int(offset) != 0:
+                self.writeline("@{0}".format(int(offset)))                         # Put the offset value in A
+                self.writeline("D=A")                                         # Save that offset
+                self.writeline("@{0}".format(runtimeProvidedBases[base]))     # Set A to base
+                self.writeline("A=M+D")                                       # Set A to the value pointed by base
+            else:
+                self.writeline("@{0}".format(runtimeProvidedBases[base]))     # Set A to base
+                self.writeline("A=M")                                         # Set A to the value pointed by base
+        elif base in staticProvidedBases:
+            self.writeline("@{0}".format(staticProvidedBases[base] + int(offset)))
+        else:
+            self.writeline("@{0}".format(int(base) + int(offset)))
 
     def incrementSP(self):
         self.writeline("@SP")
@@ -173,45 +166,38 @@ class CodeWriter:
         if segment == "constant":
             self.writeline("@" + index)                                 # Put the constant in A
             self.writeline("D=A")                                       # Save A in D
-        elif segment in segmentBases:
-            if segment != "general":
-                self.pointOffset(segmentBases[segment], index)          # Point to the segement offset
-            else:
-                self.point(segmentBases["general"] + int(index))        # Point directly to the general offset
-
-            self.writeline("D=M")                                       # Save the value in that position
         else:
-            return
+            self.point(segment, index)
+            self.writeline("D=M")                                       # Save the value in that position
 
         # At this stage the value to be pushed is in D
 
-        self.point("SP")                                                # Point to the stack top
+        self.point("SP", 0)                                             # Point to the stack top
         self.writeline("M=D")                                           # Set top value to D
         self.incrementSP()                                              # Point to the next open position
 
     def writePop(self, segment, index):
         self.writeComment('pop {0} {1}'.format(segment, index))
 
-        if segment in segmentBases.keys():
-            self.decrementSP()                                  # Make the top the last value inserted
+        self.decrementSP()                                      # Make the top the last value inserted
 
-            if segment != "general":
-                self.pointOffset(segmentBases[segment], index)      # Point to the target
-                self.writeline("D=A")                               # Store the target address
-                self.point(segmentBases["general"] + 2)             # Point to the last GP reg
-                self.writeline("M=D")                               # Assign it with the address
+        if segment in runtimeProvidedBases and index != 0:
+            self.point(segment, index)                          # Point to the target
+            self.writeline("D=A")                               # Store the target address
+            self.point("general", 2)                            # Point to the last GP reg
+            self.writeline("M=D")                               # Assign it with the address
 
-                self.point("SP")                                    # Point to the stack top
-                self.writeline("D=M")                               # Store its value
+            self.point("SP", 0)                                    # Point to the stack top
+            self.writeline("D=M")                               # Store its value
 
-                self.point(segmentBases["general"] + 2)             # Point to the reg with the address
-                self.writeline("A=M")                               # Point to the address
-                self.writeline("M=D")                               # Set the value of the stack top
-            else:
-                self.point("SP")                                    # Point to the stack top
-                self.writeline("D=M")                               # Store its value
-                self.point(segmentBases["general"] + int(index))
-                self.writeline("M=D")                               # Set the value of the stack top
+            self.point("general", 2)                            # Point to the reg with the address
+            self.writeline("A=M")                               # Point to the address
+            self.writeline("M=D")                               # Set the value of the stack top
+        else:
+            self.point("SP", 0)                                    # Point to the stack top
+            self.writeline("D=M")                               # Store its value
+            self.point(segment, index)                             # This point preserves D
+            self.writeline("M=D")                               # Set the value of the stack top
 
     def writePushPop(self, commandType, segment, index):
         '''
@@ -231,8 +217,9 @@ class CodeWriter:
         '''
         self.outfile.close()
 
-segmentBases = {"local": "LCL", "argument": "ARG", "this": "THIS",
-                "that": "THAT", "static": 16, "temp": 5, "general": 13}
+runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT", "pointer": 3}
+staticProvidedBases = {"static": 16, "temp": 5, "general": 13}
+
 binaryOperators = {"add", "sub", "eq", "gt", "lt", "and", "or"}
 unaryOperators = {"not", "neg"}
 

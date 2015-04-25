@@ -10,8 +10,7 @@ def main():
     #vm_file_path = "Input/StackArithmetic/SimpleAdd/SimpleAdd.vm"
     #vm_file_path = "Input/StackArithmetic/StackTest/StackTest.vm"
     vm_file_path = "Input/MemoryAccess/BasicTest/BasicTest.vm"
-    #vm_file_path = "Input/MemoryAccess/BasicTest/BasicTest_part.vm"
-
+    #vm_file_path = "Input/MemoryAccess/PointerTest/PointerTest.vm"
     p = Parser(vm_file_path)
 
     cw = CodeWriter(vm_file_path.replace(".vm", ".asm"))
