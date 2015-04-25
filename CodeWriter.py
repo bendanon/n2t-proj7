@@ -57,7 +57,7 @@ class CodeWriter:
         temp_0 = str(temp + 0)
 
         self.point(temp_0)
-        self.writeline("M={0}M")
+        self.writeline("M={0}M".format(operator))
 
         self.writePush("temp", 0)
 
