@@ -157,7 +157,7 @@ class CodeWriter:
         self.writeline("@{0}".format(offset))   # Put the offset value in A
         self.writeline("D=A")                   # Save that offset
         self.writeline("@{0}".format(base))     # Set A to base
-        self.writeline("A=A+D")                 # Set A to the value pointed by base
+        self.writeline("A=M+D")                 # Set A to the value pointed by base
 
     def incrementSP(self):
         self.writeline("@SP")
