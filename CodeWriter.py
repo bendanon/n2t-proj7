@@ -217,8 +217,8 @@ class CodeWriter:
         '''
         self.outfile.close()
 
-runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT", "pointer": 3}
-staticProvidedBases = {"static": 16, "temp": 5, "general": 13}
+runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT"}
+staticProvidedBases = {"static": 16, "temp": 5, "general": 13, "pointer": 3}
 
 binaryOperators = {"add", "sub", "eq", "gt", "lt", "and", "or"}
 unaryOperators = {"not", "neg"}
