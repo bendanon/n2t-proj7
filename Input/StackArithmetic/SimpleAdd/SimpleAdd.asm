@@ -14,31 +14,31 @@ A=M
 M=D
 @SP
 M=M+1
-//      pop temp 0
+//      pop general 1
 @SP
 M=M-1
 @SP
 A=M
 D=M
-@5
+@14
 M=D
-//      pop temp 1
+//      pop general 0
 @SP
 M=M-1
 @SP
 A=M
 D=M
-@6
+@13
 M=D
 //      add
-@5
+@13
 D=M
-@6
+@14
 D=D+M
-@5
+@13
 M=D
-//      push temp 0
-@5
+//      push general 0
+@13
 D=M
 @SP
 A=M

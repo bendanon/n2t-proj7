@@ -7,7 +7,9 @@ from CodeWriter import CodeWriter
 
 
 def main():
+    #vm_file_path = "Input/StackArithmetic/SimpleAdd/SimpleAdd.vm"
     vm_file_path = "Input/StackArithmetic/StackTest/StackTest.vm"
+    #vm_file_path = "Input/MemoryAccess/BasicTest/BasicTest.vm"
 
     p = Parser(vm_file_path)
 
