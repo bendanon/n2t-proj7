@@ -23,6 +23,66 @@ class CodeWriter:
         '''
         self.infile = open(filename, 'r')
 
+    def writeInit(self):
+        '''
+        Writes the assembley code that effects the VM initialization,
+        also called bootstrap code. This code must be placed at the 
+        beginning of the output file
+        '''
+        return None
+
+    def writeLabel(self, label):
+        '''
+        Writes the assembley code that is the translation of the    
+        label command
+        '''
+        self.writeComment("Label " + label)
+        self.writeline("(" + label + ")")
+
+    def writeGoto(self, label):
+        '''
+        Writes the assembley code that is the translation of the
+        goto command
+        '''
+        self.writeComment("Goto " + label)
+        self.writeline("@" + label)
+        self.writeline("0;JMP")
+
+    def writeIf(self, label):
+        '''
+        Writes the assembley code that is the translation of the
+        if command
+        '''        
+        self.writeComment("If " + label)
+
+        self.decrementSP()              #Remove the empty spot at the top
+        self.point("SP", 0)             #Point to the top value
+        self.writeline("D=M")           #Save the value on the top
+        self.writeline("@" + label)     #Point at the label
+        self.writeline("D;JNE")         #Jump if the stack top value is not zero
+        
+    def writeCall(self, functionName, numArgs):
+        '''
+        Writes the assembley code that is the translation of the
+        call command
+        '''
+        return None
+
+    def writeReturn(self):
+        '''
+        Writes the assembley code that is the translation of the
+        return command
+        '''
+        return None
+
+    def writeFunction(self, functionName, numLocals):
+        '''
+        Writes the assembley code that is the translation of the
+        given function command
+        '''
+        return None
+
+
     def writeAdd(self):
         self.writeBinOpOnT0AndT1("+", "add")
 
