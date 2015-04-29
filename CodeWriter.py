@@ -66,7 +66,31 @@ class CodeWriter:
         Writes the assembley code that is the translation of the
         call command
         '''
-        return None
+        counter_at_start = self.line_counter
+        self.writePush("constant", self.line_counter)
+        self.writePush("local", 0)
+        self.writePush("argument", 0)
+        self.writePush("this", 0)        
+        self.writePush("that", 0)
+
+        #repositions ARG for g
+        self.point("SP", 0)
+        self.writeline("D=M")
+        self.writeline("@"+str(numArgs-5))
+        self.writeline("D=D+A")
+        self.point("ARG", 0)
+        self.writeline("M=D")
+
+        #repositions LCL for g
+        self.point("SP", 0)
+        self.writeline("D=M")
+        self.point("LCL", 0)
+        self.writeline("M=D")
+            
+        #transfers control to g
+        self.writeGoto(functionName)
+        
+        print "diff is " + str(self.line_counter - counter_at_start)
 
     def writeReturn(self):
         '''

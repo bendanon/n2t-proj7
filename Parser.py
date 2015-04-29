@@ -61,6 +61,9 @@ class Parser:
 
         if command.startswith("if-goto "):
             return CommandType.C_IF
+        
+        if command.startswith("call "):
+            return CommandType.C_CALL
 
         return CommandType.C_EMPTY
 

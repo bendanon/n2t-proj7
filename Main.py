@@ -13,7 +13,8 @@ def main():
     #vm_file_path = "Input/MemoryAccess/PointerTest/PointerTest.vm"
     #vm_file_path = "Input/MemoryAccess/StaticTest/StaticTest.vm"
     #vm_file_path = "Input/ProgramFlow/BasicLoop/BasicLoop.vm"
-    vm_file_path = "Input/ProgramFlow/FibonacciSeries/FibonacciSeries.vm"
+    #vm_file_path = "Input/ProgramFlow/FibonacciSeries/FibonacciSeries.vm"
+    vm_file_path = "Input/FunctionCalls/SimpleFunction/SimpleFunction.vm"
     p = Parser(vm_file_path)
 
     cw = CodeWriter(vm_file_path.replace(".vm", ".asm"))
@@ -35,6 +36,9 @@ def main():
 
         elif(cmdType == CommandType.C_IF):
             cw.writeIf(p.arg1())
+        
+        elif(cmdType == CommandType.C_CALL):
+            cw.writeCall(p.arg1(), p.arg2())
 
         p.advance()
 
