@@ -13,6 +13,9 @@ class Function:
     def getUniqueFunctionName(self):
         return "{0}#{1}".format(self.containingFile, self.functionName)
 
+    def getReturnAddress(self):
+        return return "{0}##{1}".format(self.containingFile, self.functionName)
+
 class Label:
     def __init__(self, containingFile, labelName):
         self.containingFile = containingFile
@@ -28,11 +31,18 @@ class StaticVariable:
     def __init__(self, containingFile, variableName):
         self.containingFile = containingFile
         self.variableName = variableName
+
+        #This is the variable allocation
         self.address = staticProvidedBases["static"] + currentOffsetFromStaticBase
+
+        #Increment the current offset for the next allocation
         currentOffsetFromStaticBase += 1 
 
     def getUniqueVariableName(self):
         return "{0}${1}".format(self.containingFile, self.variableName)
+
+    def getMemoryAddress(self): 
+        return self.address
     
 '''
 Translates VM commands into Hack assembly code.
@@ -59,7 +69,7 @@ class CodeWriter:
     
         #This is a mapping of the form
         #(variable name) -> StaticVariable
-        self.labelDict = {}
+        self.variableDict = {}
 
     def setFileName(self, filename):
         '''
