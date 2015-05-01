@@ -21,6 +21,8 @@ class CodeWriter:
         Informs the code writer that the translation of a
         new VM file is started.
         '''
+        if(self.infile != None):
+            self.infile.close()
         self.infile = open(filename, 'r')
 
     def writeInit(self):
