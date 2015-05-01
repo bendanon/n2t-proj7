@@ -21,7 +21,92 @@ class CodeWriter:
         Informs the code writer that the translation of a
         new VM file is started.
         '''
+        if(self.infile is not None):
+            self.infile.close()
         self.infile = open(filename, 'r')
+
+    def writeInit(self):
+        '''
+        Writes the assembley code that effects the VM initialization,
+        also called bootstrap code. This code must be placed at the
+        beginning of the output file
+        '''
+        return None
+
+    def writeLabel(self, label):
+        '''
+        Writes the assembley code that is the translation of the
+        label command
+        '''
+        self.writeComment("Label " + label)
+        self.writeline("(" + label + ")")
+
+    def writeGoto(self, label):
+        '''
+        Writes the assembley code that is the translation of the
+        goto command
+        '''
+        self.writeComment("Goto " + label)
+        self.writeline("@" + label)
+        self.writeline("0;JMP")
+
+    def writeIf(self, label):
+        '''
+        Writes the assembley code that is the translation of the
+        if command
+        '''
+        self.writeComment("If " + label)
+
+        self.decrementSP()              #Remove the empty spot at the top
+        self.point("SP", 0)             #Point to the top value
+        self.writeline("D=M")           #Save the value on the top
+        self.writeline("@" + label)     #Point at the label
+        self.writeline("D;JNE")         #Jump if the stack top value is not zero
+
+    def writeCall(self, functionName, numArgs):
+        '''
+        Writes the assembley code that is the translation of the
+        call command
+        '''
+        counter_at_start = self.line_counter
+        self.writePush("constant", self.line_counter + 55)  #The asm line count between here and the call end
+        self.writePush("local", 0)
+        self.writePush("argument", 0)
+        self.writePush("this", 0)
+        self.writePush("that", 0)
+
+        # repositions ARG for g
+        self.point("SP", 0)
+        self.writeline("D=M")
+        self.writeline("@"+str(int(numArgs)-5))
+        self.writeline("D=D+A")
+        self.point("argument", 0)
+        self.writeline("M=D")
+
+        # repositions LCL for g
+        self.point("SP", 0)
+        self.writeline("D=M")
+        self.point("local", 0)
+        self.writeline("M=D")
+
+        # transfers control to g
+        self.writeGoto(functionName)
+
+        print "diff is " + str(self.line_counter - counter_at_start)
+
+    def writeReturn(self):
+        '''
+        Writes the assembley code that is the translation of the
+        return command
+        '''
+        return None
+
+    def writeFunction(self, functionName, numLocals):
+        '''
+        Writes the assembley code that is the translation of the
+        given function command
+        '''
+        return None
 
     def writeAdd(self):
         self.writeBinOpOnT0AndT1("+", "add")
@@ -164,7 +249,7 @@ class CodeWriter:
         self.writeComment('push {0} {1}'.format(segment, index))
 
         if segment == "constant":
-            self.writeline("@" + index)                         # Put the constant in A
+            self.writeline("@" + str(index))                    # Put the constant in A
             self.writeline("D=A")                               # Save A in D
         else:
             self.point(segment, index)

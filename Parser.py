@@ -53,6 +53,18 @@ class Parser:
         if command.startswith("pop "):
             return CommandType.C_POP
 
+        if command.startswith("label "):
+            return CommandType.C_LABEL
+
+        if command.startswith("goto "):
+            return CommandType.C_GOTO
+
+        if command.startswith("if-goto "):
+            return CommandType.C_IF
+
+        if command.startswith("call "):
+            return CommandType.C_CALL
+
         return CommandType.C_EMPTY
 
     def arg1(self):
