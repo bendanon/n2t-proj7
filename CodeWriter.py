@@ -141,6 +141,9 @@ class CodeWriter:
         '''
         self.writeComment("function {0} {1}".format(functionName,numLocals))
         
+        #Set the current function       
+        self.currentFunction = functionName
+ 
         #Create the label which callers will jump to
         self.writeline("({0})".format(functionName))
 
