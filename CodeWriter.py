@@ -60,7 +60,7 @@ class CodeWriter:
 
     def writeBinOpOnT0AndT1(self, operator, comment):
         self.writeComment(comment)
-        
+
         self.point("general", 0)
         self.writeline("D=M")
         self.point("general", 1)
@@ -140,7 +140,7 @@ class CodeWriter:
     def point(self, base, offset):
         if base in runtimeProvidedBases:
             if int(offset) != 0:
-                self.writeline("@{0}".format(int(offset)))                         # Put the offset value in A
+                self.writeline("@{0}".format(int(offset)))                    # Put the offset value in A
                 self.writeline("D=A")                                         # Save that offset
                 self.writeline("@{0}".format(runtimeProvidedBases[base]))     # Set A to base
                 self.writeline("A=M+D")                                       # Set A to the value pointed by base
@@ -164,17 +164,17 @@ class CodeWriter:
         self.writeComment('push {0} {1}'.format(segment, index))
 
         if segment == "constant":
-            self.writeline("@" + index)                                 # Put the constant in A
-            self.writeline("D=A")                                       # Save A in D
+            self.writeline("@" + index)                         # Put the constant in A
+            self.writeline("D=A")                               # Save A in D
         else:
             self.point(segment, index)
-            self.writeline("D=M")                                       # Save the value in that position
+            self.writeline("D=M")                               # Save the value in that position
 
         # At this stage the value to be pushed is in D
 
-        self.point("SP", 0)                                             # Point to the stack top
-        self.writeline("M=D")                                           # Set top value to D
-        self.incrementSP()                                              # Point to the next open position
+        self.point("SP", 0)                                     # Point to the stack top
+        self.writeline("M=D")                                   # Set top value to D
+        self.incrementSP()                                      # Point to the next open position
 
     def writePop(self, segment, index):
         self.writeComment('pop {0} {1}'.format(segment, index))
@@ -187,16 +187,16 @@ class CodeWriter:
             self.point("general", 2)                            # Point to the last GP reg
             self.writeline("M=D")                               # Assign it with the address
 
-            self.point("SP", 0)                                    # Point to the stack top
+            self.point("SP", 0)                                 # Point to the stack top
             self.writeline("D=M")                               # Store its value
 
             self.point("general", 2)                            # Point to the reg with the address
             self.writeline("A=M")                               # Point to the address
             self.writeline("M=D")                               # Set the value of the stack top
         else:
-            self.point("SP", 0)                                    # Point to the stack top
+            self.point("SP", 0)                                 # Point to the stack top
             self.writeline("D=M")                               # Store its value
-            self.point(segment, index)                             # This point preserves D
+            self.point(segment, index)                          # This point preserves D
             self.writeline("M=D")                               # Set the value of the stack top
 
     def writePushPop(self, commandType, segment, index):
@@ -217,7 +217,8 @@ class CodeWriter:
         '''
         self.outfile.close()
 
-runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG", "this": "THIS", "that": "THAT"}
+runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG",
+                        "this": "THIS", "that": "THAT"}
 staticProvidedBases = {"static": 16, "temp": 5, "general": 13, "pointer": 3}
 
 binaryOperators = {"add", "sub", "eq", "gt", "lt", "and", "or"}
