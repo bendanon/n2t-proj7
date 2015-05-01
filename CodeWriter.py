@@ -1,9 +1,42 @@
 from Common import CommandType
 
+
+'''
+A container class for function details
+'''
+class Function:
+    def __init__(self, containingFile, functionName, numArgs):
+        self.containingFile = containingFile
+        self.functionName = functionName
+        self.numArgs = numArgs
+
+    def getUniqueFunctionName(self):
+        return "{0}#{1}".format(self.containingFile, self.functionName)
+
+class Label:
+    def __init__(self, containingFile, labelName):
+        self.containingFile = containingFile
+        self.labelName = labelName
+
+    def getUniqueLabelName(self):
+        return "{0}${1}".format(self.containingFile, self.labelName)
+
+class StaticVariable:
+
+    currentOffsetFromStaticBase = 0
+
+    def __init__(self, containingFile, variableName):
+        self.containingFile = containingFile
+        self.variableName = variableName
+        self.address = staticProvidedBases["static"] + currentOffsetFromStaticBase
+        currentOffsetFromStaticBase += 1 
+
+    def getUniqueVariableName(self):
+        return "{0}${1}".format(self.containingFile, self.variableName)
+    
 '''
 Translates VM commands into Hack assembly code.
 '''
-
 
 class CodeWriter:
     def __init__(self, outfile):
@@ -13,8 +46,20 @@ class CodeWriter:
         '''
         self.outfile = open(outfile, 'w')
         self.infile = None
-
+        self.currentInfileName = None
         self.line_counter = 0
+
+        #This is a mapping of the form 
+        #(functionName) -> Function
+        self.functionDict = {}
+
+        #This is a mapping of the form
+        #(label) -> Label
+        self.labelDict = {}
+    
+        #This is a mapping of the form
+        #(variable name) -> StaticVariable
+        self.labelDict = {}
 
     def setFileName(self, filename):
         '''
@@ -24,6 +69,7 @@ class CodeWriter:
         if(self.infile is not None):
             self.infile.close()
         self.infile = open(filename, 'r')
+        self.currentInfileName = filename
 
     def writeInit(self):
         '''
@@ -68,14 +114,19 @@ class CodeWriter:
         Writes the assembley code that is the translation of the
         call command
         '''
+        # debug code, remove later
         counter_at_start = self.line_counter
-        self.writePush("constant", self.line_counter + 55)  #The asm line count between here and the call end
+
+        #Save the return address, one command after call
+        self.writePush("constant", self.line_counter + 55)
+        
+        #Save the memory segments of the caller
         self.writePush("local", 0)
         self.writePush("argument", 0)
         self.writePush("this", 0)
         self.writePush("that", 0)
 
-        # repositions ARG for g
+        #Set argument for callee
         self.point("SP", 0)
         self.writeline("D=M")
         self.writeline("@"+str(int(numArgs)-5))
@@ -83,15 +134,22 @@ class CodeWriter:
         self.point("argument", 0)
         self.writeline("M=D")
 
-        # repositions LCL for g
+        #Set local for callee
         self.point("SP", 0)
         self.writeline("D=M")
         self.point("local", 0)
         self.writeline("M=D")
 
-        # transfers control to g
-        self.writeGoto(functionName)
+        #TODO:
+        #Allocate, and initialize to 0, as many local 
+        #variables as needed by the callee. 
+        #This info is supplied at the function definition
 
+        #TODO:
+        #Retrieve the unique label corresponding to functionName
+        #Jump to the callee's start address (marked by that label)
+        
+        # debug code, remove later
         print "diff is " + str(self.line_counter - counter_at_start)
 
     def writeReturn(self):
@@ -99,6 +157,10 @@ class CodeWriter:
         Writes the assembley code that is the translation of the
         return command
         '''
+
+        #TODO:
+        #Translate the exact logic in slide 21 lecture 8
+
         return None
 
     def writeFunction(self, functionName, numLocals):
@@ -106,6 +168,14 @@ class CodeWriter:
         Writes the assembley code that is the translation of the
         given function command
         '''
+        
+        #TODO:
+        #Write a unique label for this function 
+        #Include the file name in the function name
+        #Maintain a dictionary for each class (file)
+        #Store the function label and numArgs as the value
+        #while the key is functionName ("call" would retrieve it)
+
         return None
 
     def writeAdd(self):
