@@ -1,7 +1,4 @@
 from Common import CommandType
-from CodeWriterUtils import Function
-from CodeWriterUtils import Label
-from CodeWriterUtils import StaticVariable
 
 #Constant definitions for bootstrap
 SP_INITIAL_VALUE = 256
@@ -19,20 +16,9 @@ class CodeWriter:
         '''
         self.outfile = open(outfile, 'w')
         self.infile = None
-        self.currentInfileName = None
+        self.currentFunction = None
+        self.retLabelIndex = 0
         self.line_counter = 0
-
-        #This is a mapping of the form 
-        #(functionName) -> Function
-        self.functionDict = {}
-
-        #This is a mapping of the form
-        #(label) -> Label
-        self.labelDict = {}
-    
-        #This is a mapping of the form
-        #(variable name) -> StaticVariable
-        self.variableDict = {}
 
     def setFileName(self, filename):
         '''
@@ -42,7 +28,6 @@ class CodeWriter:
         if(self.infile is not None):
             self.infile.close()
         self.infile = open(filename, 'r')
-        self.currentInfileName = filename
 
     def writeInit(self):
         '''
@@ -62,7 +47,10 @@ class CodeWriter:
         label command
         '''
         self.writeComment("Label " + label)
-        self.writeline("(" + label + ")")
+        if self.currentFunction != None:
+            self.writeline("({0})".format(label))
+        else:
+            self.writeline("({0}${1})".format(self.currentFunction, label))
 
     def writeGoto(self, label):
         '''
@@ -86,16 +74,27 @@ class CodeWriter:
         self.writeline("@" + label)     #Point at the label
         self.writeline("D;JNE")         #Jump if the stack top value is not zero
 
+
+    def generateRetLabel(self):
+        self.retLabelIndex += 1
+        return "ret{0}".format(self.retLabelIndex)
+
     def writeCall(self, functionName, numArgs):
         '''
         Writes the assembley code that is the translation of the
         call command
         '''
-        # debug code, remove later
-        counter_at_start = self.line_counter
+        self.writeComment("call {0} {1}".format(functionName,numArgs))
+
+        #generate a unique label for the return address
+        retLabel = self.generateRetLabel()
+        self.writeline("@{0}".format(retLabel))
+        self.writeline("D=A")
+        self.point("general", 0)
+        self.writeline("M=D")
 
         #Save the return address, one command after call
-        self.writePush("constant", self.line_counter + 55)
+        self.writePush("general", 0)
         
         #Save the memory segments of the caller
         self.writePush("local", 0)
@@ -106,8 +105,8 @@ class CodeWriter:
         #Set argument for callee
         self.point("SP", 0)
         self.writeline("D=M")
-        self.writeline("@"+str(int(numArgs)-5))
-        self.writeline("D=D+A")
+        self.writeline("@"+str(int(numArgs)+5))
+        self.writeline("D=D-A")
         self.point("argument", 0)
         self.writeline("M=D")
 
@@ -116,28 +115,23 @@ class CodeWriter:
         self.writeline("D=M")
         self.point("local", 0)
         self.writeline("M=D")
-
-        #TODO:
-        #Allocate, and initialize to 0, as many local 
-        #variables as needed by the callee. 
-        #This info is supplied at the function definition
-
-        #TODO:
-        #Retrieve the unique label corresponding to functionName
-        #Jump to the callee's start address (marked by that label)
         
-        # debug code, remove later
-        print "diff is " + str(self.line_counter - counter_at_start)
+        #Jump to the start point of the callee
+        self.writeline("@{0}".format(functionName))
+        self.writeline("0;JMP")
+        
+        #This is the return address label
+        self.writeline("({0})".format(retLabel))
 
     def writeReturn(self):
         '''
         Writes the assembley code that is the translation of the
         return command
         '''
-
+        self.writeComment("return")
         #TODO:
         #Translate the exact logic in slide 21 lecture 8
-
+        self.currentFunction = None
         return None
 
     def writeFunction(self, functionName, numLocals):
@@ -145,15 +139,14 @@ class CodeWriter:
         Writes the assembley code that is the translation of the
         given function command
         '''
+        self.writeComment("function {0} {1}".format(functionName,numLocals))
         
-        #TODO:
-        #Write a unique label for this function 
-        #Include the file name in the function name
-        #Maintain a dictionary for each class (file)
-        #Store the function label and numArgs as the value
-        #while the key is functionName ("call" would retrieve it)
+        #Create the label which callers will jump to
+        self.writeline("({0})".format(functionName))
 
-        return None
+        #Initialize numLocals local variables
+        for index in range (0, int(numLocals)):
+            self.writePush("constant", 0)
 
     def writeAdd(self):
         self.writeBinOpOnT0AndT1("+", "add")

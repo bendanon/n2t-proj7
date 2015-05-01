@@ -64,6 +64,12 @@ def main():
             elif(cmdType == CommandType.C_CALL):
                 cw.writeCall(p.arg1(), p.arg2())
 
+            elif(cmdType == CommandType.C_FUNCTION):
+                cw.writeFunction(p.arg1(), p.arg2())
+
+            elif(cmdType == CommandType.C_RETURN):
+                cw.writeReturn()
+
             p.advance()
 
 if __name__ == '__main__':
