@@ -67,7 +67,7 @@ class CodeWriter:
         call command
         '''
         counter_at_start = self.line_counter
-        self.writePush("constant", self.line_counter)
+        self.writePush("constant", self.line_counter + 55)  #The asm line count between here and the call end
         self.writePush("local", 0)
         self.writePush("argument", 0)
         self.writePush("this", 0)        
@@ -76,15 +76,15 @@ class CodeWriter:
         #repositions ARG for g
         self.point("SP", 0)
         self.writeline("D=M")
-        self.writeline("@"+str(numArgs-5))
+        self.writeline("@"+str(int(numArgs)-5))
         self.writeline("D=D+A")
-        self.point("ARG", 0)
+        self.point("argument", 0)
         self.writeline("M=D")
 
         #repositions LCL for g
         self.point("SP", 0)
         self.writeline("D=M")
-        self.point("LCL", 0)
+        self.point("local", 0)
         self.writeline("M=D")
             
         #transfers control to g
@@ -248,7 +248,7 @@ class CodeWriter:
         self.writeComment('push {0} {1}'.format(segment, index))
 
         if segment == "constant":
-            self.writeline("@" + index)                                 # Put the constant in A
+            self.writeline("@" + str(index))                                 # Put the constant in A
             self.writeline("D=A")                                       # Save A in D
         else:
             self.point(segment, index)
