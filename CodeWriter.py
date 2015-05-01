@@ -1,28 +1,27 @@
 from Common import CommandType
 
+#Constant definitions for bootstrap
+SP_INITIAL_VALUE = 256
+SP_POSITION = 0
 
-'''
-A container class for function details
-'''
 class Function:
-    def __init__(self, containingFile, functionName, numArgs):
-        self.containingFile = containingFile
+    def __init__(self, functionName, numArgs):
         self.functionName = functionName
         self.numArgs = numArgs
 
-    def getUniqueFunctionName(self):
-        return "{0}#{1}".format(self.containingFile, self.functionName)
+    def getRetSymbol(self):
+        return "#{1}".format(self.functionName)
 
-    def getReturnAddress(self):
-        return return "{0}##{1}".format(self.containingFile, self.functionName)
+    def getNumArgs(self):
+        return self.numArgs
 
 class Label:
-    def __init__(self, containingFile, labelName):
-        self.containingFile = containingFile
+    def __init__(self, containingFunction, labelName):
+        self.containingFunction = containingFunction
         self.labelName = labelName
 
     def getUniqueLabelName(self):
-        return "{0}${1}".format(self.containingFile, self.labelName)
+        return "{0}${1}".format(self.containingFunction, self.labelName)
 
 class StaticVariable:
 
@@ -38,8 +37,8 @@ class StaticVariable:
         #Increment the current offset for the next allocation
         currentOffsetFromStaticBase += 1 
 
-    def getUniqueVariableName(self):
-        return "{0}${1}".format(self.containingFile, self.variableName)
+    def getUniqueSymbolName(self):
+        return "{0}.{1}".format(self.containingFile, self.variableName)
 
     def getMemoryAddress(self): 
         return self.address
@@ -86,8 +85,12 @@ class CodeWriter:
         Writes the assembley code that effects the VM initialization,
         also called bootstrap code. This code must be placed at the
         beginning of the output file
-        '''
-        return None
+        '''         
+        self.writeline("@{0}".format(SP_INITIAL_VALUE)) #The stack base in the memory
+        self.writeline("D=A")                           #Save the stack base memory address
+        self.writeline("@{0}".format(SP_POSITION))      #The position of the uninitialized SP
+        self.writeline("M=D")                           #SP = SP_INITIAL_VALUE
+        self.writeCall("Sys.init", 0)                   #Call the sys function that calls Main.main 
 
     def writeLabel(self, label):
         '''
