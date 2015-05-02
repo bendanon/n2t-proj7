@@ -21,7 +21,7 @@ class CodeWriter:
         Opens the output file/stream and gets ready to write into it.
         '''
         self.outfile = open(outfile, 'w')
-        self.infile = None  # TODO: It appears this infile never closed.
+        self.infile = None
 
         self.currentFunction = None
         self.retLabelIndex = 0
@@ -413,4 +413,6 @@ class CodeWriter:
         '''
         Closes the output file.
         '''
-        self.outfile.close()
+        self.outfile.close()        
+        self.infile.close() 
+
