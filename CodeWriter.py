@@ -138,58 +138,24 @@ class CodeWriter:
         self.point("general", 0)  # frame
         self.writeline("M=D")
 
-        # retAddr = *(frame-5)
-        self.writeline("@5")
-        self.writeline("A=D-A")  # (D still points to frame)
-        self.writeline("D=M")
-        self.point("general", 1)  # retAddr
-        self.writeline("M=D")
-
         # *ARG = pop
         self.writePop("argument", 0)
 
         # SP = ARG+1
-        self.point("argument", 0)
-        self.writeline("D=M+1")
-        self.point("SP", 0)
+        self.point("argument", 1)
+        self.writeline("D=A")
+        self.writeline("@SP")
         self.writeline("M=D")
+       
+        for segmentPointer in ["THAT","THIS","ARG","LCL"]: 
+            self.point("general", 0)  # frame
+            self.writeline("AM=M-1")  # Decrement and point
+            self.writeline("D=M")     # Save the base of current segment
+            self.writeline("@{0}".format(segmentPointer))
+            self.writeline("M=D")
 
-        # THAT = *(frame-1)
         self.point("general", 0)  # frame
         self.writeline("A=M-1")
-        self.writeline("D=M")
-        self.point("that", 0)
-        self.writeline("M=D")
-
-        # THIS = *(frame-2)
-        self.point("general", 0)  # frame
-        self.writeline("D=M")
-        self.writeline("@2")
-        self.writeline("A=D-A")
-        self.writeline("D=M")
-        self.point("this", 0)
-        self.writeline("M=D")
-
-        # ARG = *(frame-3)
-        self.point("general", 0)  # frame
-        self.writeline("D=M")
-        self.writeline("@3")
-        self.writeline("A=D-A")
-        self.writeline("D=M")
-        self.point("argument", 0)
-        self.writeline("M=D")
-
-        # LCL = *(frame-4)
-        self.point("general", 0)  # frame
-        self.writeline("D=M")
-        self.writeline("@4")
-        self.writeline("A=D-A")
-        self.writeline("D=M")
-        self.point("local", 0)
-        self.writeline("M=D")
-
-        # goto retAddr
-        self.point("general", 1)  # retAddr
         self.writeline("A=M")
         self.writeline("0;JMP")
 
