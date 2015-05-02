@@ -8,14 +8,18 @@ import os
 import sys
 
 
-def main():
+def main(args):
     '''
     You can set vm_file_path to be either a folder (and then an asm file
     with the folder name will be created in the folder) or set it to be
     a vm file (and then an asm file with the file name will be created
     in the same location)
     '''
-    vm_file_path = sys.argv[1]
+    if len(args) != 1:
+        print "Usage: (python) Main.py <.vm file path>"
+        return
+
+    vm_file_path = args[0]
 
     # vm_file_path = "Input/StackArithmetic/SimpleAdd/SimpleAdd.vm"
     # vm_file_path = "Input/StackArithmetic/StackTest/StackTest.vm"
@@ -67,4 +71,4 @@ def main():
             p.advance()
 
 if __name__ == '__main__':
-    main()
+    main(sys.argv[1:])
