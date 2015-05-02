@@ -4,6 +4,13 @@ from Common import CommandType
 SP_INITIAL_VALUE = 256
 SP_POSITION = 0
 
+runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG",
+                        "this": "THIS", "that": "THAT"}
+staticProvidedBases = {"static": 16, "temp": 5, "general": 13, "pointer": 3}
+
+binaryOperators = {"add", "sub", "eq", "gt", "lt", "and", "or"}
+unaryOperators = {"not", "neg"}
+
 
 class CodeWriter:
     '''
@@ -410,19 +417,3 @@ class CodeWriter:
         Closes the output file.
         '''
         self.outfile.close()
-
-
-runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG",
-                        "this": "THIS", "that": "THAT"}
-staticProvidedBases = {"static": 16, "temp": 5, "general": 13, "pointer": 3}
-
-binaryOperators = {"add", "sub", "eq", "gt", "lt", "and", "or"}
-unaryOperators = {"not", "neg"}
-
-
-def Test():
-    cw = CodeWriter("Input/StackArithmetic/SimpleAdd/SimpleAdd.asm")
-    cw.writePushPop(CommandType.C_PUSH, "constant", "8")
-    cw.writePushPop(CommandType.C_PUSH, "constant", "7")
-    cw.writeArithmetic("add")
-    cw.Close()

@@ -16,7 +16,7 @@ def main(args):
     in the same location)
     '''
     if len(args) != 1:
-        print "Usage: (python) Main.py <.vm file path>"
+        print "Usage: (python) Main.py [<.vm file path>|<source dir path>]"
         return
 
     vm_file_path = args[0]
