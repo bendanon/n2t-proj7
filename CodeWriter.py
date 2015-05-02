@@ -74,7 +74,7 @@ class CodeWriter:
         self.writeline("@" + label)     # Point at the label
         self.writeline("D;JNE")         # Jump if the stack top value is not zero
 
-    def generateRetLabel(self):
+    def generateUniqueRetLabel(self):
         self.retLabelIndex += 1
         return "ret{0}".format(self.retLabelIndex)
 
@@ -85,8 +85,8 @@ class CodeWriter:
         '''
         self.writeComment("call {0} {1}".format(functionName, numArgs))
 
-        # generate a unique label for the return address
-        retLabel = self.generateRetLabel()
+        retLabel = self.generateUniqueRetLabel()
+
         self.writeline("@{0}".format(retLabel))
         self.writeline("D=A")
         self.point("general", 0)
@@ -116,11 +116,11 @@ class CodeWriter:
         self.writeline("M=D")
 
         # Jump to the start point of the callee
+        # TODO - Replace with writeGoto?
         self.writeline("@{0}".format(functionName))
         self.writeline("0;JMP")
 
-        # This is the return address label
-        self.writeline("({0})".format(retLabel))
+        self.writeLabel(retLabel)
 
     def writeReturn(self):
         '''
@@ -128,14 +128,74 @@ class CodeWriter:
         return command.
         '''
         self.writeComment("return")
-        # TODO: Translate the exact logic in slide 21 lecture 8
+
+        # frame = LCL
+        self.point("local", 0)
+        self.writeline("D=M")
+        self.point("general", 0)  # frame
+        self.writeline("M=D")
+
+        # retAddr = *(frame-5)
+        self.writeline("@5")
+        self.writeline("A=D-A")  # D still points to frame
+        self.writeline("D=M")
+        self.point("general", 1)  # retAddr
+        self.writeline("M=D")
+
+        # *ARG = pop
+        self.writePop("argument", 0)
+
+        # SP = ARG+1
+        self.point("argument", 0)
+        self.writeline("D=M+1")
+        self.point("SP", 0)
+        self.writeline("M=D")
+
+        # THAT = *(frame-1)
+        self.point("general", 0)
+        self.writeline("A=M-1")
+        self.writeline("D=M")
+        self.point("that", 0)
+        self.writeline("M=D")
+
+        # THIS = *(frame-2)
+        self.point("general", 0)
+        self.writeline("D=M")
+        self.writeline("@2")
+        self.writeline("A=D-A")
+        self.writeline("D=M")
+        self.point("this", 0)
+        self.writeline("M=D")
+
+        # ARG = *(frame-3)
+        self.point("general", 0)
+        self.writeline("D=M")
+        self.writeline("@3")
+        self.writeline("A=D-A")
+        self.writeline("D=M")
+        self.point("argument", 0)
+        self.writeline("M=D")
+
+        # LCL = *(frame-4)
+        self.point("general", 0)
+        self.writeline("D=M")
+        self.writeline("@4")
+        self.writeline("A=D-A")
+        self.writeline("D=M")
+        self.point("local", 0)
+        self.writeline("M=D")
+
+        # goto retAddr
+        self.point("general", 1)  # retAddr
+        self.writeline("A=M")
+        self.writeline("0;JMP")
+
         self.currentFunction = None
-        return None
 
     def writeFunction(self, functionName, numLocals):
         '''
         Writes the assembly code that is the translation of the
-        given function command
+        given function command.
         '''
         self.writeComment("function {0} {1}".format(functionName, numLocals))
 
