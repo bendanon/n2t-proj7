@@ -116,7 +116,6 @@ class CodeWriter:
         self.writeline("M=D")
 
         # Jump to the start point of the callee
-        # TODO - Replace with writeGoto?
         self.writeline("@{0}".format(functionName))
         self.writeline("0;JMP")
 
