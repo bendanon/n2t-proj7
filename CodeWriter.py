@@ -1,38 +1,24 @@
 from Common import CommandType
-from CodeWriterUtils import Function
-from CodeWriterUtils import Label
-from CodeWriterUtils import StaticVariable
 
-#Constant definitions for bootstrap
+# Constant definitions for bootstrap
 SP_INITIAL_VALUE = 256
 SP_POSITION = 0
 
-'''
-Translates VM commands into Hack assembly code.
-'''
 
 class CodeWriter:
+    '''
+    Translates VM commands into Hack assembly code.
+    '''
     def __init__(self, outfile):
         '''
-        Opens the output file/stream and gets ready to
-        write into it.
+        Opens the output file/stream and gets ready to write into it.
         '''
         self.outfile = open(outfile, 'w')
-        self.infile = None
-        self.currentInfileName = None
+        self.infile = None  # TODO: It appears this infile never closed.
+
+        self.currentFunction = None
+        self.retLabelIndex = 0
         self.line_counter = 0
-
-        #This is a mapping of the form 
-        #(functionName) -> Function
-        self.functionDict = {}
-
-        #This is a mapping of the form
-        #(label) -> Label
-        self.labelDict = {}
-    
-        #This is a mapping of the form
-        #(variable name) -> StaticVariable
-        self.variableDict = {}
 
     def setFileName(self, filename):
         '''
@@ -42,32 +28,34 @@ class CodeWriter:
         if(self.infile is not None):
             self.infile.close()
         self.infile = open(filename, 'r')
-        self.currentInfileName = filename
 
     def writeInit(self):
         '''
-        Writes the assembley code that effects the VM initialization,
+        Writes the assembly code that effects the VM initialization,
         also called bootstrap code. This code must be placed at the
         beginning of the output file
-        '''         
-        self.writeline("@{0}".format(SP_INITIAL_VALUE)) #The stack base in the memory
-        self.writeline("D=A")                           #Save the stack base memory address
-        self.writeline("@{0}".format(SP_POSITION))      #The position of the uninitialized SP
-        self.writeline("M=D")                           #SP = SP_INITIAL_VALUE
-        self.writeCall("Sys.init", 0)                   #Call the sys function that calls Main.main 
+        '''
+        self.writeline("@{0}".format(SP_INITIAL_VALUE))  # The stack base in the memory
+        self.writeline("D=A")                            # Save the stack base memory address
+        self.writeline("@{0}".format(SP_POSITION))       # The position of the uninitialized SP
+        self.writeline("M=D")                            # SP = SP_INITIAL_VALUE
+        self.writeCall("Sys.init", 0)                    # Call the sys function that calls Main.main 
 
     def writeLabel(self, label):
         '''
-        Writes the assembley code that is the translation of the
-        label command
+        Writes the assembly code that is the translation of the
+        label command.
         '''
         self.writeComment("Label " + label)
-        self.writeline("(" + label + ")")
+        if self.currentFunction is not None:
+            self.writeline("({0})".format(label))
+        else:
+            self.writeline("({0}${1})".format(self.currentFunction, label))
 
     def writeGoto(self, label):
         '''
-        Writes the assembley code that is the translation of the
-        goto command
+        Writes the assembly code that is the translation of the
+        goto command.
         '''
         self.writeComment("Goto " + label)
         self.writeline("@" + label)
@@ -75,85 +63,91 @@ class CodeWriter:
 
     def writeIf(self, label):
         '''
-        Writes the assembley code that is the translation of the
-        if command
+        Writes the assembly code that is the translation of the
+        if-goto command.
         '''
         self.writeComment("If " + label)
 
-        self.decrementSP()              #Remove the empty spot at the top
-        self.point("SP", 0)             #Point to the top value
-        self.writeline("D=M")           #Save the value on the top
-        self.writeline("@" + label)     #Point at the label
-        self.writeline("D;JNE")         #Jump if the stack top value is not zero
+        self.decrementSP()              # Remove the empty spot at the top
+        self.point("SP", 0)             # Point to the top value
+        self.writeline("D=M")           # Save the value on the top
+        self.writeline("@" + label)     # Point at the label
+        self.writeline("D;JNE")         # Jump if the stack top value is not zero
+
+    def generateRetLabel(self):
+        self.retLabelIndex += 1
+        return "ret{0}".format(self.retLabelIndex)
 
     def writeCall(self, functionName, numArgs):
         '''
-        Writes the assembley code that is the translation of the
-        call command
+        Writes the assembly code that is the translation of the
+        call command.
         '''
-        # debug code, remove later
-        counter_at_start = self.line_counter
+        self.writeComment("call {0} {1}".format(functionName, numArgs))
 
-        #Save the return address, one command after call
-        self.writePush("constant", self.line_counter + 55)
-        
-        #Save the memory segments of the caller
+        # generate a unique label for the return address
+        retLabel = self.generateRetLabel()
+        self.writeline("@{0}".format(retLabel))
+        self.writeline("D=A")
+        self.point("general", 0)
+        self.writeline("M=D")
+
+        # Save the return address, one command after call
+        self.writePush("general", 0)
+
+        # Save the memory segments of the caller
         self.writePush("local", 0)
         self.writePush("argument", 0)
         self.writePush("this", 0)
         self.writePush("that", 0)
 
-        #Set argument for callee
+        # Set argument for callee
         self.point("SP", 0)
         self.writeline("D=M")
-        self.writeline("@"+str(int(numArgs)-5))
-        self.writeline("D=D+A")
+        self.writeline("@"+str(int(numArgs)+5))
+        self.writeline("D=D-A")
         self.point("argument", 0)
         self.writeline("M=D")
 
-        #Set local for callee
+        # Set local for callee
         self.point("SP", 0)
         self.writeline("D=M")
         self.point("local", 0)
         self.writeline("M=D")
 
-        #TODO:
-        #Allocate, and initialize to 0, as many local 
-        #variables as needed by the callee. 
-        #This info is supplied at the function definition
+        # Jump to the start point of the callee
+        self.writeline("@{0}".format(functionName))
+        self.writeline("0;JMP")
 
-        #TODO:
-        #Retrieve the unique label corresponding to functionName
-        #Jump to the callee's start address (marked by that label)
-        
-        # debug code, remove later
-        print "diff is " + str(self.line_counter - counter_at_start)
+        # This is the return address label
+        self.writeline("({0})".format(retLabel))
 
     def writeReturn(self):
         '''
-        Writes the assembley code that is the translation of the
-        return command
+        Writes the assembly code that is the translation of the
+        return command.
         '''
-
-        #TODO:
-        #Translate the exact logic in slide 21 lecture 8
-
+        self.writeComment("return")
+        # TODO: Translate the exact logic in slide 21 lecture 8
+        self.currentFunction = None
         return None
 
     def writeFunction(self, functionName, numLocals):
         '''
-        Writes the assembley code that is the translation of the
+        Writes the assembly code that is the translation of the
         given function command
         '''
-        
-        #TODO:
-        #Write a unique label for this function 
-        #Include the file name in the function name
-        #Maintain a dictionary for each class (file)
-        #Store the function label and numArgs as the value
-        #while the key is functionName ("call" would retrieve it)
+        self.writeComment("function {0} {1}".format(functionName, numLocals))
 
-        return None
+        # Set the current function
+        self.currentFunction = functionName
+
+        # Create the label which callers will jump to
+        self.writeline("({0})".format(functionName))
+
+        # Initialize numLocals local variables
+        for _ in range(0, int(numLocals)):
+            self.writePush("constant", 0)
 
     def writeAdd(self):
         self.writeBinOpOnT0AndT1("+", "add")
@@ -270,19 +264,25 @@ class CodeWriter:
         self.line_counter += 1
 
     def point(self, base, offset):
+        offset = int(offset)
         if base in runtimeProvidedBases:
-            if int(offset) != 0:
-                self.writeline("@{0}".format(int(offset)))                    # Put the offset value in A
-                self.writeline("D=A")                                         # Save that offset
-                self.writeline("@{0}".format(runtimeProvidedBases[base]))     # Set A to base
-                self.writeline("A=M+D")                                       # Set A to the value pointed by base
+            runtime_base = runtimeProvidedBases[base]
+            if offset != 0:
+                # Put the offset in D
+                self.writeline("@{0}".format(offset))
+                self.writeline("D=A")
+                # Set A to D plus the segment's base address
+                self.writeline("@{0}".format(runtime_base))
+                self.writeline("A=M+D")
             else:
-                self.writeline("@{0}".format(runtimeProvidedBases[base]))     # Set A to base
-                self.writeline("A=M")                                         # Set A to the value pointed by base
+                # Set A to the segment's base address
+                self.writeline("@{0}".format(runtime_base))
+                self.writeline("A=M")
         elif base in staticProvidedBases:
-            self.writeline("@{0}".format(staticProvidedBases[base] + int(offset)))
+            self.writeline("@{0}".format(staticProvidedBases[base] +
+                                         offset))
         else:
-            self.writeline("@{0}".format(int(base) + int(offset)))
+            self.writeline("@{0}".format(int(base) + offset))
 
     def incrementSP(self):
         self.writeline("@SP")
@@ -296,46 +296,49 @@ class CodeWriter:
         self.writeComment('push {0} {1}'.format(segment, index))
 
         if segment == "constant":
-            self.writeline("@" + str(index))                    # Put the constant in A
-            self.writeline("D=A")                               # Save A in D
+            # Put the constant in A, Save A in D
+            self.writeline("@" + str(index))
+            self.writeline("D=A")
         else:
+            # Save the value in that position
             self.point(segment, index)
-            self.writeline("D=M")                               # Save the value in that position
+            self.writeline("D=M")
 
-        # At this stage the value to be pushed is in D
-
-        self.point("SP", 0)                                     # Point to the stack top
-        self.writeline("M=D")                                   # Set top value to D
-        self.incrementSP()                                      # Point to the next open position
+        # At this stage the value to be is in D
+        # Point to the stack top, set top value to D,
+        # and Point to the next open position
+        self.point("SP", 0)
+        self.writeline("M=D")
+        self.incrementSP()
 
     def writePop(self, segment, index):
         self.writeComment('pop {0} {1}'.format(segment, index))
 
-        self.decrementSP()                                      # Make the top the last value inserted
+        self.decrementSP()  # Make the top the last value inserted
 
         if segment in runtimeProvidedBases and index != 0:
-            self.point(segment, index)                          # Point to the target
-            self.writeline("D=A")                               # Store the target address
-            self.point("general", 2)                            # Point to the last GP reg
-            self.writeline("M=D")                               # Assign it with the address
+            self.point(segment, index)      # Point to the target
+            self.writeline("D=A")           # Store the target address
+            self.point("general", 2)        # Point to the last GP reg
+            self.writeline("M=D")           # Assign it with the address
 
-            self.point("SP", 0)                                 # Point to the stack top
-            self.writeline("D=M")                               # Store its value
+            self.point("SP", 0)             # Point to the stack top
+            self.writeline("D=M")           # Store its value
 
-            self.point("general", 2)                            # Point to the reg with the address
-            self.writeline("A=M")                               # Point to the address
-            self.writeline("M=D")                               # Set the value of the stack top
+            self.point("general", 2)        # Point to the reg with the address
+            self.writeline("A=M")           # Point to the address
+            self.writeline("M=D")           # Set the value of the stack top
         else:
-            self.point("SP", 0)                                 # Point to the stack top
-            self.writeline("D=M")                               # Store its value
-            self.point(segment, index)                          # This point preserves D
-            self.writeline("M=D")                               # Set the value of the stack top
+            self.point("SP", 0)             # Point to the stack top
+            self.writeline("D=M")           # Store its value
+            self.point(segment, index)      # This point preserves D
+            self.writeline("M=D")           # Set the value of the stack top
 
     def writePushPop(self, commandType, segment, index):
         '''
         Writes the assembly code that is the translation
         of the given command , where command is either
-        C_PUSH or C_POP .
+        C_PUSH or C_POP.
         '''
         if commandType == CommandType.C_PUSH:
             self.writePush(segment, index)
@@ -348,6 +351,7 @@ class CodeWriter:
         Closes the output file.
         '''
         self.outfile.close()
+
 
 runtimeProvidedBases = {"SP": "SP", "local": "LCL", "argument": "ARG",
                         "this": "THIS", "that": "THAT"}

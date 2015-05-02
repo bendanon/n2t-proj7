@@ -65,6 +65,12 @@ class Parser:
         if command.startswith("call "):
             return CommandType.C_CALL
 
+        if command.startswith("function "):
+            return CommandType.C_FUNCTION
+
+        if command.startswith("return"):
+            return CommandType.C_RETURN
+
         return CommandType.C_EMPTY
 
     def arg1(self):
