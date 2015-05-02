@@ -11,8 +11,8 @@ import sys
 def main(args):
     '''
     You can set vm_file_path to be either a folder (and then an asm file
-    with the folder name will be created in the folder) or set it to be
-    a vm file (and then an asm file with the file name will be created
+    with the folder source_file will be created in the folder) or set it to be
+    a vm file (and then an asm file with the file source_file will be created
     in the same location)
     '''
     if len(args) != 1:
@@ -31,20 +31,20 @@ def main(args):
     # vm_file_path = "Input/FunctionCalls/SimpleFunction/SimpleFunction.vm"
 
     sources = []
-    cw = None
 
     if not vm_file_path.endswith(".vm"):
-        sources += [os.path.join(vm_file_path, name) for name
-                    in os.listdir(vm_file_path) if name.endswith('.vm')]
-        asm_file_path = "{0}.asm".format(vm_file_path.split(os.sep)[-2])
-        cw = CodeWriter(os.path.join(vm_file_path, asm_file_path))
+        sources += [os.path.join(vm_file_path, source_file) for source_file
+                    in os.listdir(vm_file_path) if source_file.endswith('.vm')]
+        asm_file_name = "{0}.asm".format(vm_file_path.split(os.sep)[-2])
+        asm_file_path = os.path.join(vm_file_path, asm_file_name)
     else:
-        cw = CodeWriter(vm_file_path.replace(".vm", ".asm"))
         sources = [vm_file_path]
+        asm_file_path = vm_file_path.replace(".vm", ".asm")
 
-    for name in sources:
-        cw.setFileName(name)
-        p = Parser(name)
+    cw = CodeWriter(asm_file_path)
+    for source_file in sources:
+        cw.setFileName(source_file)
+        p = Parser(source_file)
 
         while(p.hasMoreCommands()):
             cmdType = p.commandType()
