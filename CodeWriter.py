@@ -50,8 +50,7 @@ class CodeWriter:
 
     def writeLabel(self, label):
         '''
-        Writes the assembly code that is the translation of the
-        label command.
+        Writes the assembly code that is the translation of the label command.
         '''
         self.writeComment("Label " + label)
         if self.currentFunction is not None:
@@ -61,8 +60,7 @@ class CodeWriter:
 
     def writeGoto(self, label):
         '''
-        Writes the assembly code that is the translation of the
-        goto command.
+        Writes the assembly code that is the translation of the goto command.
         '''
         self.writeComment("Goto " + label)
         self.writeline("@" + label)
@@ -70,8 +68,8 @@ class CodeWriter:
 
     def writeIf(self, label):
         '''
-        Writes the assembly code that is the translation of the
-        if-goto command.
+        Writes the assembly code that is the translation of
+        the if-goto command.
         '''
         self.writeComment("If " + label)
 
@@ -87,8 +85,7 @@ class CodeWriter:
 
     def writeCall(self, functionName, numArgs):
         '''
-        Writes the assembly code that is the translation of the
-        call command.
+        Writes the assembly code that is the translation of the call command.
         '''
         self.writeComment("call {0} {1}".format(functionName, numArgs))
 
@@ -137,13 +134,13 @@ class CodeWriter:
 
         # frame = LCL
         self.point("local", 0)
-        self.writeline("D=M")
+        self.writeline("D=A")
         self.point("general", 0)  # frame
         self.writeline("M=D")
 
         # retAddr = *(frame-5)
         self.writeline("@5")
-        self.writeline("A=D-A")  # D still points to frame
+        self.writeline("A=D-A")  # (D still points to frame)
         self.writeline("D=M")
         self.point("general", 1)  # retAddr
         self.writeline("M=D")
@@ -158,14 +155,14 @@ class CodeWriter:
         self.writeline("M=D")
 
         # THAT = *(frame-1)
-        self.point("general", 0)
+        self.point("general", 0)  # frame
         self.writeline("A=M-1")
         self.writeline("D=M")
         self.point("that", 0)
         self.writeline("M=D")
 
         # THIS = *(frame-2)
-        self.point("general", 0)
+        self.point("general", 0)  # frame
         self.writeline("D=M")
         self.writeline("@2")
         self.writeline("A=D-A")
@@ -174,7 +171,7 @@ class CodeWriter:
         self.writeline("M=D")
 
         # ARG = *(frame-3)
-        self.point("general", 0)
+        self.point("general", 0)  # frame
         self.writeline("D=M")
         self.writeline("@3")
         self.writeline("A=D-A")
@@ -183,7 +180,7 @@ class CodeWriter:
         self.writeline("M=D")
 
         # LCL = *(frame-4)
-        self.point("general", 0)
+        self.point("general", 0)  # frame
         self.writeline("D=M")
         self.writeline("@4")
         self.writeline("A=D-A")
