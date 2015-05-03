@@ -53,7 +53,7 @@ class CodeWriter:
         Writes the assembly code that is the translation of the label command.
         '''
         self.writeComment("Label " + label)
-        if self.currentFunction is not None:
+        if self.currentFunction is None:
             self.writeline("({0})".format(label))
         else:
             self.writeline("({0}${1})".format(self.currentFunction, label))
@@ -63,7 +63,11 @@ class CodeWriter:
         Writes the assembly code that is the translation of the goto command.
         '''
         self.writeComment("Goto " + label)
-        self.writeline("@" + label)
+
+        if self.currentFunction is None:
+            self.writeline("@{0}".format(label))
+        else:
+            self.writeline("@{0}${1}".format(self.currentFunction, label))
         self.writeline("0;JMP")
 
     def writeIf(self, label):
@@ -99,31 +103,32 @@ class CodeWriter:
         # Save the return address, one command after call
         self.writePush("general", 0)
 
-        # Save the memory segments of the caller
-        self.writePush("local", 0)
-        self.writePush("argument", 0)
-        self.writePush("this", 0)
-        self.writePush("that", 0)
+        for segmentPointer in ["LCL", "ARG", "THIS", "THAT"]:
+            self.writeline("@{0}".format(segmentPointer))
+            self.writeline("D=M")
+            self.point("general", 0)
+            self.writeline("M=D")
+            self.writePush("general", 0)
 
         # Set argument for callee
-        self.point("SP", 0)
+        self.writeline("@SP")
         self.writeline("D=M")
         self.writeline("@"+str(int(numArgs)+5))
         self.writeline("D=D-A")
-        self.point("argument", 0)
+        self.writeline("@ARG")
         self.writeline("M=D")
 
         # Set local for callee
-        self.point("SP", 0)
+        self.writeline("@SP")
         self.writeline("D=M")
-        self.point("local", 0)
+        self.writeline("@LCL")
         self.writeline("M=D")
 
         # Jump to the start point of the callee
         self.writeline("@{0}".format(functionName))
         self.writeline("0;JMP")
 
-        self.writeLabel(retLabel)
+        self.writeline("({0})".format(retLabel))
 
     def writeReturn(self):
         '''
@@ -133,17 +138,23 @@ class CodeWriter:
         self.writeComment("return")
 
         # frame = LCL
-        self.point("local", 0)
-        self.writeline("D=A")
+        self.writeline("@LCL")
+        self.writeline("D=M")
         self.point("general", 0)  # frame
+        self.writeline("M=D")
+
+        #Save arg to general 1
+        self.writeline("@ARG")
+        self.writeline("D=M")
+        self.point("general", 1)
         self.writeline("M=D")
 
         # *ARG = pop
         self.writePop("argument", 0)
 
         # SP = ARG+1
-        self.point("argument", 1)
-        self.writeline("D=A")
+        self.point("general", 1)
+        self.writeline("D=M+1")
         self.writeline("@SP")
         self.writeline("M=D")
        
@@ -345,7 +356,7 @@ class CodeWriter:
 
         self.decrementSP()  # Make the top the last value inserted
 
-        if segment in runtimeProvidedBases and index != 0:
+        if segment in runtimeProvidedBases and int(index) != 0:
             self.point(segment, index)      # Point to the target
             self.writeline("D=A")           # Store the target address
             self.point("general", 2)        # Point to the last GP reg
