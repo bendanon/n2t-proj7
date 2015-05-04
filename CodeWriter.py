@@ -143,21 +143,15 @@ class CodeWriter:
         self.point("general", 0)  # frame
         self.writeline("M=D")
 
-        #Save arg to general 1
-        self.writeline("@ARG")
-        self.writeline("D=M")
-        self.point("general", 1)
-        self.writeline("M=D")
-
         # *ARG = pop
         self.writePop("argument", 0)
 
-        # SP = ARG+1
-        self.point("general", 1)
-        self.writeline("D=M+1")
+        #SP=ARG+1
+        self.writeline("@ARG")
+        self.writeline("D=M")
         self.writeline("@SP")
-        self.writeline("M=D")
-       
+        self.writeline("M=D+1")
+        
         for segmentPointer in ["THAT","THIS","ARG","LCL"]: 
             self.point("general", 0)  # frame
             self.writeline("AM=M-1")  # Decrement and point

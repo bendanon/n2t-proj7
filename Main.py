@@ -76,5 +76,7 @@ def main(args):
 
             p.advance()
 
+    cw.Close()
+
 if __name__ == '__main__':
     main(sys.argv[1:])
