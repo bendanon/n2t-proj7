@@ -94,7 +94,8 @@ class CodeWriter:
         self.writeComment("call {0} {1}".format(functionName, numArgs))
 
         retLabel = self.generateUniqueRetLabel()
-
+        
+        self.writeComment("Putting {0} in general 0".format(retLabel))
         self.writeline("@{0}".format(retLabel))
         self.writeline("D=A")
         self.point("general", 0)
@@ -104,6 +105,7 @@ class CodeWriter:
         self.writePush("general", 0)
 
         for segmentPointer in ["LCL", "ARG", "THIS", "THAT"]:
+            self.writeComment("Putting {0} in general 0".format(segmentPointer))
             self.writeline("@{0}".format(segmentPointer))
             self.writeline("D=M")
             self.point("general", 0)
@@ -111,6 +113,7 @@ class CodeWriter:
             self.writePush("general", 0)
 
         # Set argument for callee
+        self.writeComment("ARG=SP-{0}".format(str(int(numArgs)+5)))
         self.writeline("@SP")
         self.writeline("D=M")
         self.writeline("@"+str(int(numArgs)+5))
@@ -119,6 +122,7 @@ class CodeWriter:
         self.writeline("M=D")
 
         # Set local for callee
+        self.writeComment("LCL=SP")
         self.writeline("@SP")
         self.writeline("D=M")
         self.writeline("@LCL")
@@ -138,29 +142,38 @@ class CodeWriter:
         self.writeComment("return")
 
         # frame = LCL
+        self.writeComment("frame = LCL")
         self.writeline("@LCL")
         self.writeline("D=M")
         self.point("general", 0)  # frame
         self.writeline("M=D")
+        self.writeline("@5")
+        self.writeline("A=D-A")
+        self.writeline("D=M")
+        self.point("general", 1)  #retAddr
+        self.writeline("M=D")
 
         # *ARG = pop
+        self.writeComment("*ARG = pop")
         self.writePop("argument", 0)
 
         #SP=ARG+1
+        self.writeComment("SP=ARG+1")
         self.writeline("@ARG")
         self.writeline("D=M")
         self.writeline("@SP")
         self.writeline("M=D+1")
         
-        for segmentPointer in ["THAT","THIS","ARG","LCL"]: 
+        for segmentPointer in ["THAT","THIS","ARG","LCL"]:
+            self.writeComment("{0}=*(frame-{1})".format(segmentPointer, ["THAT","THIS","ARG","LCL"].index(segmentPointer)+1))
             self.point("general", 0)  # frame
             self.writeline("AM=M-1")  # Decrement and point
             self.writeline("D=M")     # Save the base of current segment
             self.writeline("@{0}".format(segmentPointer))
             self.writeline("M=D")
 
-        self.point("general", 0)  # frame
-        self.writeline("A=M-1")
+        self.writeComment("Jump to return address")
+        self.point("general", 1)  # retAddr
         self.writeline("A=M")
         self.writeline("0;JMP")
 
@@ -291,11 +304,13 @@ class CodeWriter:
 
     def writeComment(self, comment):
         self.writeline("//      " + comment)
-        self.line_counter -= 1
 
     def writeline(self, line):
-        self.outfile.write(str(line) + "\n")
-        self.line_counter += 1
+        if line.startswith('(') or line.startswith('/'):
+            self.outfile.write(str(line) + "\n")
+        else:
+            self.outfile.write(str(line) + "                              {0}\n".format("//{0}".format(self.line_counter)))            
+            self.line_counter += 1            
 
     def point(self, base, offset):
         offset = int(offset)
