@@ -1,4 +1,5 @@
 from Common import CommandType
+import os
 
 # Constant definitions for bootstrap
 SP_INITIAL_VALUE = 256
@@ -28,13 +29,10 @@ class CodeWriter:
         self.retLabelIndex = 0
         self.line_counter = 0
 
-            
-        self.writeInit()
-
+    def writeFinishLoop(self):
         self.writeline("(END)")
         self.writeline("@END")
         self.writeline("0;JMP")
-                
 
     def setFileName(self, filename):
         '''
@@ -44,7 +42,8 @@ class CodeWriter:
         if(self.infile is not None):
             self.infile.close()
         self.infile = open(filename, 'r')
-        self.currentFilename = filename.split('/')[-1].split('.')[0]
+        sep = '/' if '/' in filename else os.sep
+        self.currentFilename = filename.split(sep)[-1].split('.')[0]
 
     def writeInit(self):
         '''
@@ -56,15 +55,14 @@ class CodeWriter:
         self.writeline("D=A")                            # Save the stack base memory address
         self.writeline("@{0}".format(SP_POSITION))       # The position of the uninitialized SP
         self.writeline("M=D")                            # SP = SP_INITIAL_VALUE
-        self.writeCall("Sys.init", 0)                    # Call the sys function that calls Main.main 
-
+        self.writeCall("Sys.init", 0)                    # Call the sys function that calls Main.main
 
     def relativeSymbol(self, symbol):
-        if self.currentFunction is None: 
+        if self.currentFunction is None:
             return "{0}".format(symbol)
         else:
             return "{0}${1}".format(self.currentFunction, symbol)
-    
+
     def writeLabel(self, label):
         '''
         Writes the assembly code that is the translation of the label command.
@@ -105,7 +103,7 @@ class CodeWriter:
         self.writeComment("call {0} {1}".format(functionName, numArgs))
 
         retLabel = self.generateUniqueRetLabel()
-        
+
         self.writeComment("Putting {0} in general 0".format(retLabel))
         self.writeline("@{0}".format(retLabel))
         self.writeline("D=A")
@@ -116,7 +114,8 @@ class CodeWriter:
         self.writePush("general", 0)
 
         for segmentPointer in ["LCL", "ARG", "THIS", "THAT"]:
-            self.writeComment("Putting {0} in general 0".format(segmentPointer))
+            self.writeComment("Putting {0} in general 0".
+                              format(segmentPointer))
             self.writeline("@{0}".format(segmentPointer))
             self.writeline("D=M")
             self.point("general", 0)
@@ -158,31 +157,39 @@ class CodeWriter:
         self.writeline("D=M")
         self.point("general", 0)  # frame
         self.writeline("M=D")
+
+        # retAddr = *(frame-5)
         self.writeline("@5")
         self.writeline("A=D-A")
         self.writeline("D=M")
-        self.point("general", 1)  #retAddr
+        self.point("general", 1)  # retAddr
         self.writeline("M=D")
 
         # *ARG = pop
         self.writeComment("*ARG = pop")
         self.writePop("argument", 0)
 
-        #SP=ARG+1
+        # SP=ARG+1
         self.writeComment("SP=ARG+1")
         self.writeline("@ARG")
         self.writeline("D=M")
         self.writeline("@SP")
         self.writeline("M=D+1")
-        
-        for segmentPointer in ["THAT","THIS","ARG","LCL"]:
-            self.writeComment("{0}=*(frame-{1})".format(segmentPointer, ["THAT","THIS","ARG","LCL"].index(segmentPointer)+1))
+
+        # Restoring the caller's pointers
+        callerPointersToRestore = ["THAT", "THIS", "ARG", "LCL"]
+        for segmentPointer in callerPointersToRestore:
+            self.writeComment("{0}=*(frame-{1})".
+                              format(segmentPointer,
+                                     callerPointersToRestore.
+                                     index(segmentPointer)+1))
             self.point("general", 0)  # frame
             self.writeline("AM=M-1")  # Decrement and point
             self.writeline("D=M")     # Save the base of current segment
             self.writeline("@{0}".format(segmentPointer))
             self.writeline("M=D")
 
+        # goto retAddr
         self.writeComment("Jump to return address")
         self.point("general", 1)  # retAddr
         self.writeline("A=M")
@@ -318,8 +325,9 @@ class CodeWriter:
         if line.startswith('(') or line.startswith('/'):
             self.outfile.write(str(line) + "\n")
         else:
-            self.outfile.write(str(line) + "                              {0}\n".format("//{0}".format(self.line_counter)))            
-            self.line_counter += 1            
+            self.outfile.write(str(line) + "\t\t\t{0}\n".
+                               format("//{0}".format(self.line_counter)))
+            self.line_counter += 1
 
     def point(self, base, offset):
         offset = int(offset)
@@ -338,9 +346,12 @@ class CodeWriter:
                 self.writeline("A=M")
         elif base in staticProvidedBases:
             if base == "static":
-                self.writeline("@{0}.{1}".format(self.currentFilename , staticProvidedBases[base] + offset))
+                self.writeline("@{0}.{1}".format(self.currentFilename,
+                                                 staticProvidedBases[base] +
+                                                 offset))
             else:
-                self.writeline("@{0}".format(staticProvidedBases[base] + offset))
+                self.writeline("@{0}".format(staticProvidedBases[base] +
+                                             offset))
         else:
             self.writeline("@{0}".format(int(base) + offset))
 
@@ -410,6 +421,5 @@ class CodeWriter:
         '''
         Closes the output file.
         '''
-        self.outfile.close()        
-        self.infile.close() 
-
+        self.outfile.close()
+        self.infile.close()

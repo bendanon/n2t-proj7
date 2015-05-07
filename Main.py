@@ -30,19 +30,29 @@ def main(args):
     # vm_file_path = "Input/ProgramFlow/FibonacciSeries/FibonacciSeries.vm"
     # vm_file_path = "Input/FunctionCalls/SimpleFunction/SimpleFunction.vm"
 
-    sources = []
+    init_code_required = False
+    source_file_paths = []
+    sep = '/' if '/' in vm_file_path else os.sep
 
     if not vm_file_path.endswith(".vm"):
-        sources += [os.path.join(vm_file_path, source_file) for source_file
-                    in os.listdir(vm_file_path) if source_file.endswith('.vm')]
-        asm_file_name = "{0}.asm".format(vm_file_path.split(os.sep)[-2])
+        source_file_names = [file_name for file_name in
+                             os.listdir(vm_file_path) if
+                             file_name.endswith('.vm')]
+        source_file_paths += [os.path.join(vm_file_path, file_name) for
+                              file_name in source_file_names]
+        init_code_required = 'Sys.vm' in source_file_names
+        asm_file_name = "{0}.asm".format(vm_file_path.split(sep)[-2])
         asm_file_path = os.path.join(vm_file_path, asm_file_name)
     else:
-        sources = [vm_file_path]
+        source_file_paths = [vm_file_path]
         asm_file_path = vm_file_path.replace(".vm", ".asm")
 
     cw = CodeWriter(asm_file_path)
-    for source_file in sources:
+    if init_code_required:
+        cw.writeInit()
+        cw.writeFinishLoop()
+
+    for source_file in source_file_paths:
         cw.setFileName(source_file)
         p = Parser(source_file)
 
