@@ -27,6 +27,15 @@ class CodeWriter:
         self.retLabelIndex = 0
         self.line_counter = 0
 
+            
+        self.writeInit()
+
+        self.writeline("(END)")
+        self.writeline("@END")
+        self.writeline("0;JMP")
+        
+        
+
     def setFileName(self, filename):
         '''
         Informs the code writer that the translation of a
@@ -48,15 +57,19 @@ class CodeWriter:
         self.writeline("M=D")                            # SP = SP_INITIAL_VALUE
         self.writeCall("Sys.init", 0)                    # Call the sys function that calls Main.main 
 
+
+    def relativeSymbol(self, symbol):
+        if self.currentFunction is None: 
+            return "{0}".format(symbol)
+        else:
+            return "{0}${1}".format(self.currentFunction, symbol)
+    
     def writeLabel(self, label):
         '''
         Writes the assembly code that is the translation of the label command.
         '''
         self.writeComment("Label " + label)
-        if self.currentFunction is None:
-            self.writeline("({0})".format(label))
-        else:
-            self.writeline("({0}${1})".format(self.currentFunction, label))
+        self.writeline("({0})".format(self.relativeSymbol(label)))
 
     def writeGoto(self, label):
         '''
@@ -64,10 +77,7 @@ class CodeWriter:
         '''
         self.writeComment("Goto " + label)
 
-        if self.currentFunction is None:
-            self.writeline("@{0}".format(label))
-        else:
-            self.writeline("@{0}${1}".format(self.currentFunction, label))
+        self.writeline("@{0}".format(self.relativeSymbol(label)))
         self.writeline("0;JMP")
 
     def writeIf(self, label):
@@ -80,7 +90,7 @@ class CodeWriter:
         self.decrementSP()              # Remove the empty spot at the top
         self.point("SP", 0)             # Point to the top value
         self.writeline("D=M")           # Save the value on the top
-        self.writeline("@" + label)     # Point at the label
+        self.writeline("@" + self.relativeSymbol(label))     # Point at the label
         self.writeline("D;JNE")         # Jump if the stack top value is not zero
 
     def generateUniqueRetLabel(self):
@@ -176,8 +186,6 @@ class CodeWriter:
         self.point("general", 1)  # retAddr
         self.writeline("A=M")
         self.writeline("0;JMP")
-
-        self.currentFunction = None
 
     def writeFunction(self, functionName, numLocals):
         '''
