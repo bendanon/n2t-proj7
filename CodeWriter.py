@@ -24,6 +24,7 @@ class CodeWriter:
         self.infile = None
 
         self.currentFunction = None
+        self.currentFilename = None
         self.retLabelIndex = 0
         self.line_counter = 0
 
@@ -33,8 +34,7 @@ class CodeWriter:
         self.writeline("(END)")
         self.writeline("@END")
         self.writeline("0;JMP")
-        
-        
+                
 
     def setFileName(self, filename):
         '''
@@ -44,6 +44,7 @@ class CodeWriter:
         if(self.infile is not None):
             self.infile.close()
         self.infile = open(filename, 'r')
+        self.currentFilename = filename.split('/')[-1].split('.')[0]
 
     def writeInit(self):
         '''
@@ -336,8 +337,10 @@ class CodeWriter:
                 self.writeline("@{0}".format(runtime_base))
                 self.writeline("A=M")
         elif base in staticProvidedBases:
-            self.writeline("@{0}".format(staticProvidedBases[base] +
-                                         offset))
+            if base == "static":
+                self.writeline("@{0}.{1}".format(self.currentFilename , staticProvidedBases[base] + offset))
+            else:
+                self.writeline("@{0}".format(staticProvidedBases[base] + offset))
         else:
             self.writeline("@{0}".format(int(base) + offset))
 
